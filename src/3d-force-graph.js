@@ -1,7 +1,19 @@
 import './3d-force-graph.css';
 
 import * as THREE from 'three';
-import TrackballControls from 'three-trackballcontrols';
+window.THREE = THREE;
+
+import 'three/examples/js/controls/TrackBallControls';
+import 'three/examples/js/controls/VRControls';
+import 'three/examples/js/effects/VREffect';
+import 'three-firstperson-vr-controls';
+import { default as ThreeText2D } from 'three-text-2d';
+THREE.Text2D = ThreeText2D;
+import './TouchpadMovementControls';
+
+window.WebVRConfig = { BUFFER_SCALE: 0.5 };
+import 'webvr-polyfill';
+import { default as webvrui } from 'webvr-ui';
 
 import graph from 'ngraph.graph';
 import forcelayout3d from 'ngraph.forcelayout3d';
@@ -52,10 +64,13 @@ export default function() {
 		navInfo.innerHTML = "MOVE mouse &amp; press LEFT/A: rotate, MIDDLE/S: zoom, RIGHT/D: pan";
 		env.domNode.appendChild(navInfo);
 
-		// Setup tooltip
+		// Setup html tooltip
 		env.toolTipElem = document.createElement('div');
 		env.toolTipElem.classList.add('graph-tooltip');
 		env.domNode.appendChild(env.toolTipElem);
+
+		// Setup sprite tooltip
+		env.toolTipSprite = new THREE.Text2D.SpriteText2D('', { fillStyle: 'lavender' });
 
 		// Capture mouse coords on move
 		env.raycaster = new THREE.Raycaster();
@@ -96,9 +111,18 @@ export default function() {
 		env.renderer = new THREE.WebGLRenderer();
 		env.domNode.appendChild(env.renderer.domElement);
 
-		// Add camera interaction
-		env.controls = new TrackballControls(env.camera, env.renderer.domElement);
+		// Add camera interactions
+		env.tbcontrols = new TrackballControls(env.camera, env.renderer.domElement);
+		env.vrcontrols = new THREE.VRControls(env.camera);
 
+		//env.fpVrControls = new THREE.FirstPersonVRControls(env.camera);
+		//env.fpVrControls.verticalMovement = true;
+		//env.fpVrControls.movementSpeed = 75;
+
+		//env.touchMoveControls = new THREE.TouchpadMovementControls(env.camera, env.renderer.domElement);
+		//env.touchMoveControls.movementSpeed = 75;
+
+		initWebVR();
 
 		env.initialised = true;
 
@@ -110,14 +134,93 @@ export default function() {
 
 			// Update tooltip
 			env.raycaster.setFromCamera(env.mouse, env.camera);
-			const intersects = env.raycaster.intersectObjects(env.scene.children);
-			env.toolTipElem.innerHTML = intersects.length ? intersects[0].object.name || '' : '';
+			const intersects = env.raycaster.intersectObjects(env.scene.children).filter(o => o.object.type !== 'Sprite');
+			const firstObj = intersects.length ? intersects[0].object : null;
+			env.toolTipElem.innerHTML = firstObj ? firstObj.name || '' : '';
+
+			if (env.vrButton.isPresenting()) {
+				// Show sprite label
+				env.toolTipSprite.text = firstObj ? firstObj.name || '' : '';
+				if (firstObj) { env.toolTipSprite.position.copy(firstObj.position); }
+			}
+
+			// Update controls
+			env.tbcontrols.update();
+			env.vrcontrols.update();
+			//env.fpVrControls.update(timestamp);
+			//if (env.vrButton.isPresenting()) {
+			//	env.touchMoveControls.update(timestamp);
+			//}
 
 			// Frame cycle
-			env.controls.update();
-			env.renderer.render(env.scene, env.camera);
-			requestAnimationFrame(animate);
-		})()
+			// WebGL rendering
+			//env.renderer.render(env.scene, env.camera);
+			//requestAnimationFrame(animate);
+
+			// WebVR rendering
+			env.vreffect.render(env.scene, env.camera);
+			env.vrDisplay.requestAnimationFrame(animate);
+		})();
+
+		//
+
+		function initWebVR() {
+			// Apply VR stereo rendering to renderer.
+			env.vreffect = new THREE.VREffect(env.renderer);
+
+
+			// Initialize the WebVR UI.
+			const webvruiElem = document.createElement('div');
+			webvruiElem.setIdAttribute('ui');
+			env.domNode.appendChild(webvruiElem);
+
+			const vrButton = document.createElement('div');
+			vrButton.setIdAttribute('vr-button');
+			webvruiElem.appendChild(vrButton);
+
+			const magicWindow = document.createElement('a');
+			magicWindow.setIdAttribute('magic-window');
+			magicWindow.innerHTML = 'Try it without a headset';
+			webvruiElem.appendChild(magicWindow);
+
+			env.vrButton = new webvrui.EnterVRButton(env.renderer.domElement, {
+				color: 'black',
+				background: 'white',
+				corners: 'square'
+			});
+
+			env.vrButton.on('exit', () => {
+				env.camera.quaternion.set(0, 0, 0, 1);
+				//env.camera.position.set(0, env.vrcontrols.userHeight, 0);
+				env.camera.position.set(0, 0, 0);
+				//env.touchMoveControls.moveForward = 0;
+			});
+			env.vrButton.on('enter', () => {
+				env.camera.quaternion.set(0, 0, 0, 1);
+				env.camera.position.set(0, 0, 0);
+				//env.touchMoveControls.moveForward = 0;
+			});
+			env.vrButton.on('hide', () => {
+				document.getElementById('ui').style.display = 'none';
+			});
+			env.vrButton.on('show', () => {
+				document.getElementById('ui').style.display = 'inherit';
+			});
+
+			document.getElementById('vr-button').appendChild(env.vrButton.domElement);
+			document.getElementById('magic-window').addEventListener('click', () => {
+				env.vrButton.requestEnterFullscreen();
+			});
+
+			//
+
+			navigator.getVRDisplays().then(displays => {
+				if (displays.length > 0) {
+					env.vrDisplay = displays[0];
+					env.vrDisplay.requestAnimationFrame(animate);
+				}
+			});
+		}
 	}
 
 	function digest() {
@@ -127,6 +230,9 @@ export default function() {
 
 		env.onFrame = ()=>{}; // Clear previous frame hook
 		env.scene = new THREE.Scene(); // Clear the place
+
+		// Add tooltip sprite
+		env.scene.add(env.toolTipSprite);
 
 		// Build graph with data
 		const graph = ngraph.graph();
@@ -182,7 +288,9 @@ export default function() {
 
 		function resizeCanvas() {
 			if (env.width && env.height) {
-				env.renderer.setSize(env.width, env.height);
+				//env.renderer.setSize(env.width, env.height);
+				env.vreffect.setSize(env.width, env.height);
+
 				env.camera.aspect = env.width/env.height;
 				env.camera.updateProjectionMatrix();
 			}
