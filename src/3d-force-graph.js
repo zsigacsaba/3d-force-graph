@@ -1,19 +1,19 @@
 import './3d-force-graph.css';
 
-import * as THREE from 'three';
-window.THREE = THREE;
+import * as Three from 'three';
+window.THREE = Three;
 
 import 'three/examples/js/controls/TrackBallControls';
 import 'three/examples/js/controls/VRControls';
 import 'three/examples/js/effects/VREffect';
 import 'three-firstperson-vr-controls';
 import { default as ThreeText2D } from 'three-text2d';
-window.THREE.Text2D = ThreeText2D;
+THREE.Text2D = ThreeText2D;
 //import './TouchpadMovementControls';
 
 window.WebVRConfig = { BUFFER_SCALE: 0.5 };
 import 'webvr-polyfill';
-import { default as webvrui } from 'webvr-ui';
+import * as webvrui from 'webvr-ui';
 
 import graph from 'ngraph.graph';
 import forcelayout3d from 'ngraph.forcelayout3d';
