@@ -9,7 +9,7 @@ import 'three/examples/js/effects/VREffect';
 import 'three-firstperson-vr-controls';
 import { default as ThreeText2D } from 'three-text-2d';
 THREE.Text2D = ThreeText2D;
-import './TouchpadMovementControls';
+//import './TouchpadMovementControls';
 
 window.WebVRConfig = { BUFFER_SCALE: 0.5 };
 import 'webvr-polyfill';
