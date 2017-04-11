@@ -1,14 +1,13 @@
 import './3d-force-graph.css';
 
-import * as Three from 'three';
-window.THREE = Three;
+import './threeGlobal';
 
 import 'three/examples/js/controls/TrackBallControls';
 import 'three/examples/js/controls/VRControls';
 import 'three/examples/js/effects/VREffect';
 import 'three-firstperson-vr-controls';
 import './ToggleMovementControls';
-import { default as ThreeText2D } from 'three-text2d';
+import * as ThreeText2D from 'three-text2d';
 THREE.Text2D = ThreeText2D;
 
 window.WebVRConfig = { BUFFER_SCALE: 0.5 };
@@ -112,7 +111,7 @@ export default function() {
 		env.domNode.appendChild(env.renderer.domElement);
 
 		// Add camera interactions
-		env.tbcontrols = new TrackballControls(env.camera, env.renderer.domElement);
+		env.tbcontrols = new THREE.TrackballControls(env.camera, env.renderer.domElement);
 		env.vrcontrols = new THREE.VRControls(env.camera);
 
 		//env.fpVrControls = new THREE.FirstPersonVRControls(env.camera);
@@ -171,15 +170,15 @@ export default function() {
 
 			// Initialize the WebVR UI.
 			const webvruiElem = document.createElement('div');
-			webvruiElem.setIdAttribute('ui');
+			webvruiElem.setAttribute('id', 'ui');
 			env.domNode.appendChild(webvruiElem);
 
 			const vrButton = document.createElement('div');
-			vrButton.setIdAttribute('vr-button');
+			vrButton.setAttribute('id', 'vr-button');
 			webvruiElem.appendChild(vrButton);
 
 			const magicWindow = document.createElement('a');
-			magicWindow.setIdAttribute('magic-window');
+			magicWindow.setAttribute('id', 'magic-window');
 			magicWindow.innerHTML = 'Try it without a headset';
 			webvruiElem.appendChild(magicWindow);
 
