@@ -7,9 +7,9 @@ import 'three/examples/js/controls/TrackBallControls';
 import 'three/examples/js/controls/VRControls';
 import 'three/examples/js/effects/VREffect';
 import 'three-firstperson-vr-controls';
+import './ToggleMovementControls';
 import { default as ThreeText2D } from 'three-text2d';
 THREE.Text2D = ThreeText2D;
-//import './TouchpadMovementControls';
 
 window.WebVRConfig = { BUFFER_SCALE: 0.5 };
 import 'webvr-polyfill';
@@ -119,7 +119,7 @@ export default function() {
 		//env.fpVrControls.verticalMovement = true;
 		//env.fpVrControls.movementSpeed = 75;
 
-		//env.touchMoveControls = new THREE.TouchpadMovementControls(env.camera, env.renderer.domElement);
+		//env.touchMoveControls = new THREE.ToggleMovementControls(env.camera, env.renderer.domElement);
 		//env.touchMoveControls.movementSpeed = 75;
 
 		initWebVR();
