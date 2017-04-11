@@ -123,12 +123,18 @@ export default function() {
 
 		initWebVR();
 
+		navigator.getVRDisplays().then(displays => {
+			if (displays.length > 0) {
+				env.vrDisplay = displays[0];
+				env.vrDisplay.requestAnimationFrame(animate); // Kick-off renderer
+			}
+		});
+
 		env.initialised = true;
 
 		//
 
-		// Kick-off renderer
-		(function animate() { // IIFE
+		function animate() {
 			env.onFrame();
 
 			// Update tooltip
@@ -159,9 +165,7 @@ export default function() {
 			// WebVR rendering
 			env.vreffect.render(env.scene, env.camera);
 			env.vrDisplay.requestAnimationFrame(animate);
-		})();
-
-		//
+		}
 
 		function initWebVR() {
 			// Apply VR stereo rendering to renderer.
@@ -209,15 +213,6 @@ export default function() {
 			document.getElementById('vr-button').appendChild(env.vrButton.domElement);
 			document.getElementById('magic-window').addEventListener('click', () => {
 				env.vrButton.requestEnterFullscreen();
-			});
-
-			//
-
-			navigator.getVRDisplays().then(displays => {
-				if (displays.length > 0) {
-					env.vrDisplay = displays[0];
-					env.vrDisplay.requestAnimationFrame(animate);
-				}
 			});
 		}
 	}
