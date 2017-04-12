@@ -28,4 +28,5 @@ a#magic-window {
     display: block;
     color: white;
     margin-top: 1em;
+    cursor: pointer;
 }
