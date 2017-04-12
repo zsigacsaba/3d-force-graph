@@ -111,15 +111,15 @@ export default function() {
 		env.domNode.appendChild(env.renderer.domElement);
 
 		// Add camera interactions
-		env.tbcontrols = new THREE.TrackballControls(env.camera, env.renderer.domElement);
+		//env.tbcontrols = new THREE.TrackballControls(env.camera, env.renderer.domElement);
 		env.vrcontrols = new THREE.VRControls(env.camera);
 
-		//env.fpVrControls = new THREE.FirstPersonVRControls(env.camera);
-		//env.fpVrControls.verticalMovement = true;
-		//env.fpVrControls.movementSpeed = 75;
+		env.fpVrControls = new THREE.FirstPersonVRControls(env.camera);
+		env.fpVrControls.verticalMovement = true;
+		env.fpVrControls.movementSpeed = 75;
 
-		//env.touchMoveControls = new THREE.ToggleMovementControls(env.camera, env.renderer.domElement);
-		//env.touchMoveControls.movementSpeed = 75;
+		env.touchMoveControls = new THREE.ToggleMovementControls(env.camera, env.renderer.domElement);
+		env.touchMoveControls.movementSpeed = 75;
 
 		initWebVR();
 
@@ -134,7 +134,7 @@ export default function() {
 
 		//
 
-		function animate() {
+		function animate(timestamp) {
 			env.onFrame();
 
 			// Update tooltip
@@ -150,12 +150,12 @@ export default function() {
 			}
 
 			// Update controls
-			env.tbcontrols.update();
+			//env.tbcontrols.update();
 			env.vrcontrols.update();
-			//env.fpVrControls.update(timestamp);
-			//if (env.vrButton.isPresenting()) {
-			//	env.touchMoveControls.update(timestamp);
-			//}
+			env.fpVrControls.update(timestamp);
+			if (env.vrButton.isPresenting()) {
+				env.touchMoveControls.update(timestamp);
+			}
 
 			// Frame cycle
 			// WebGL rendering
