@@ -1,7 +1,6 @@
 import './3d-force-graph.css';
 
 import './threeGlobal';
-
 import 'three/examples/js/controls/TrackBallControls';
 import 'three/examples/js/controls/VRControls';
 import 'three/examples/js/effects/VREffect';
@@ -243,7 +242,7 @@ export default function() {
 			nodeMaterial.opacity = 0.75;
 
 			const sphere = new THREE.Mesh(
-				new THREE.SphereGeometry(Math.cbrt(env.valAccessor(node.data) || 1) * env.nodeRelSize),
+				new THREE.SphereGeometry(Math.cbrt(env.valAccessor(node.data) || 1) * env.nodeRelSize, 8, 8),
 				nodeMaterial
 			);
 			sphere.name = env.nameAccessor(node.data) || '';
@@ -259,7 +258,7 @@ export default function() {
 				toName = getNodeName(link.toId);
 			if (fromName && toName) { line.name = `${fromName} > ${toName}`; }
 
-			env.scene.add(link.data.line = line)
+			env.scene.add(link.data.line = line);
 
 			function getNodeName(nodeId) {
 				return env.nameAccessor(graph.getNode(nodeId).data);

@@ -1,6 +1,6 @@
 {
   "name": "3d-force-graph",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "UI component for a 3D force-directed graph using ThreeJS and ngraph.forcelayout3d layout engine",
   "main": "dist/3d-force-graph.js",
   "jsnext:main": "src/index",
@@ -36,7 +36,6 @@
     "three": "~0.84",
     "three-firstperson-vr-controls": "~0.1",
     "three-text2d": "~0.3",
-    "three-trackballcontrols": "~0.0.5",
     "webvr-polyfill": "~0.9",
     "webvr-ui": "~0.9"
   },
