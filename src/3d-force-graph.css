@@ -13,3 +13,19 @@
     color: lavender;
     font-size: 18px;
 }
+
+/* Position the button on the bottom of the page. */
+#ui {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    font-family: 'Karla', sans-serif;
+    z-index: 1;
+}
+a#magic-window {
+    display: block;
+    color: white;
+    margin-top: 1em;
+}
