@@ -17,77 +17,70 @@ import graph from 'ngraph.graph';
 import forcelayout3d from 'ngraph.forcelayout3d';
 const ngraph = { graph, forcelayout3d };
 
-export default function() {
+import * as SWC from 'swc';
 
-	const CAMERA_DISTANCE2NODES_FACTOR = 150;
+//
 
-	class CompProp {
-		constructor(name, initVal = null, redigest = true, onChange = newVal => {}) {
-			this.name = name;
-			this.initVal = initVal;
-			this.redigest = redigest;
-			this.onChange = onChange;
-		}
-	}
+const CAMERA_DISTANCE2NODES_FACTOR = 150;
 
-	const env = { // Holds component state
-		initialised: false,
-		onFrame: () => {}
-	};
+export default SWC.createComponent({
 
-	const exposeProps = [
-		new CompProp('width', window.innerWidth),
-		new CompProp('height', window.innerHeight),
-		new CompProp('graphData', {
-			nodes: { 1: { name: 'mock', val: 1 } },
-			links: [[1, 1]] // [from, to]
+	props: [
+		new SWC.Prop('width', window.innerWidth),
+		new SWC.Prop('height', window.innerHeight),
+		new SWC.Prop('graphData', {
+			nodes: {},
+			links: [] // [from, to]
 		}),
-		new CompProp('nodeRelSize', 4), // volume per val unit
-		new CompProp('lineOpacity', 0.2),
-		new CompProp('valAccessor', node => node.val),
-		new CompProp('nameAccessor', node => node.name),
-		new CompProp('colorAccessor', node => node.color),
-		new CompProp('warmUpTicks', 0), // how many times to tick the force engine at init before starting to render
-		new CompProp('coolDownTicks', Infinity),
-		new CompProp('coolDownTime', 15000) // ms
-	];
+		new SWC.Prop('nodeRelSize', 4), // volume per val unit
+		new SWC.Prop('lineOpacity', 0.2),
+		new SWC.Prop('valAccessor', node => node.val),
+		new SWC.Prop('nameAccessor', node => node.name),
+		new SWC.Prop('colorAccessor', node => node.color),
+		new SWC.Prop('warmUpTicks', 0), // how many times to tick the force engine at init before starting to render
+		new SWC.Prop('coolDownTicks', Infinity),
+		new SWC.Prop('coolDownTime', 15000) // ms
+	],
 
-	function initStatic() {
+	init: (domNode, state) => {
+		// Init state
+		state.onFrame = (() => {});
+
 		// Wipe DOM
-		env.domNode.innerHTML = '';
+		domNode.innerHTML = '';
 
 		// Add nav info section
 		const navInfo = document.createElement('div');
 		navInfo.classList.add('graph-nav-info');
 		navInfo.innerHTML = "MOVE mouse &amp; press LEFT/A: rotate, MIDDLE/S: zoom, RIGHT/D: pan";
-		env.domNode.appendChild(navInfo);
+		domNode.appendChild(navInfo);
 
 		// Setup html tooltip
-		env.toolTipElem = document.createElement('div');
-		env.toolTipElem.classList.add('graph-tooltip');
-		env.domNode.appendChild(env.toolTipElem);
+		const toolTipElem = document.createElement('div');
+		toolTipElem.classList.add('graph-tooltip');
+		domNode.appendChild(toolTipElem);
 
 		// Setup sprite tooltip
-		env.toolTipSprite = new THREE.Text2D.SpriteText2D('', { fillStyle: 'lavender' });
+		state.toolTipSprite = new THREE.Text2D.SpriteText2D('', { fillStyle: 'lavender' });
 
 		// Capture mouse coords on move
-		env.raycaster = new THREE.Raycaster();
-		env.mouse = new THREE.Vector2();
-		env.mouse.x = -2; // Initialize off canvas
-		env.mouse.y = -2;
-		env.domNode.addEventListener("mousemove", ev => {
+		const raycaster = new THREE.Raycaster();
+		const mousePos = new THREE.Vector2();
+		mousePos.x = -2; // Initialize off canvas
+		mousePos.y = -2;
+		domNode.addEventListener("mousemove", ev => {
 			// update the mouse pos
-			const offset = getOffset(env.domNode),
+			const offset = getOffset(domNode),
 				relPos = {
 					x: ev.pageX - offset.left,
 					y: ev.pageY - offset.top
 				};
-			env.mouse.x = (relPos.x / env.width) * 2 - 1;
-			env.mouse.y = -(relPos.y / env.height) * 2 + 1;
+			mousePos.x = (relPos.x / state.width) * 2 - 1;
+			mousePos.y = -(relPos.y / state.height) * 2 + 1;
 
 			// Move tooltip
-			env.toolTipElem.style.top = (relPos.y - 40) + 'px';
-			env.toolTipElem.style.left = (relPos.x - 20) + 'px';
+			toolTipElem.style.top = (relPos.y - 40) + 'px';
+			toolTipElem.style.left = (relPos.x - 20) + 'px';
 
 			function getOffset(el) {
 				const rect = el.getBoundingClientRect(),
@@ -98,83 +91,81 @@ export default function() {
 		}, false);
 
 		// Setup camera
-		env.camera = new THREE.PerspectiveCamera();
-		env.camera.far = 20000;
-		env.camera.position.z = 1000;
+		state.camera = new THREE.PerspectiveCamera();
+		state.camera.far = 20000;
+		state.camera.position.z = 1000;
 
 		// Setup scene
-		env.scene = new THREE.Scene();
+		state.scene = new THREE.Scene();
 
 		// Setup renderer
-		env.renderer = new THREE.WebGLRenderer();
-		env.domNode.appendChild(env.renderer.domElement);
+		state.renderer = new THREE.WebGLRenderer();
+		domNode.appendChild(state.renderer.domElement);
 
 		// Add camera interactions
-		//env.tbcontrols = new THREE.TrackballControls(env.camera, env.renderer.domElement);
-		env.vrcontrols = new THREE.VRControls(env.camera);
+		//const tbcontrols = new THREE.TrackballControls(state.camera, state.renderer.domElement);
+		const vrcontrols = new THREE.VRControls(state.camera);
 
-		env.fpVrControls = new THREE.FirstPersonVRControls(env.camera);
-		env.fpVrControls.verticalMovement = true;
-		env.fpVrControls.movementSpeed = 75;
+		const fpVrControls = new THREE.FirstPersonVRControls(state.camera);
+		fpVrControls.verticalMovement = true;
+		fpVrControls.movementSpeed = 75;
 
-		env.touchMoveControls = new THREE.ToggleMovementControls(env.camera, env.renderer.domElement);
-		env.touchMoveControls.movementSpeed = 75;
+		const touchMoveControls = new THREE.ToggleMovementControls(state.camera, state.renderer.domElement);
+		touchMoveControls.movementSpeed = 75;
 
 		initWebVR();
 
 		navigator.getVRDisplays().then(displays => {
 			if (displays.length > 0) {
-				env.vrDisplay = displays[0];
-				env.vrDisplay.requestAnimationFrame(animate); // Kick-off renderer
+				state.vrDisplay = displays[0];
+				state.vrDisplay.requestAnimationFrame(animate); // Kick-off renderer
 			}
 		});
-
-		env.initialised = true;
-
+		
 		//
 
 		function animate(timestamp) {
-			env.onFrame();
+			state.onFrame();
 
 			// Update tooltip
-			env.raycaster.setFromCamera(env.mouse, env.camera);
-			const intersects = env.raycaster.intersectObjects(env.scene.children).filter(o => o.object.type !== 'Sprite');
+			raycaster.setFromCamera(mousePos, state.camera);
+			const intersects = raycaster.intersectObjects(state.scene.children).filter(o => o.object.type !== 'Sprite');
 			const firstObj = intersects.length ? intersects[0].object : null;
-			env.toolTipElem.innerHTML = firstObj ? firstObj.name || '' : '';
+			toolTipElem.innerHTML = firstObj ? firstObj.name || '' : '';
 
-			if (env.vrButton.isPresenting()) {
+			if (state.vrButton.isPresenting()) {
 				// Show sprite label
-				env.toolTipSprite.text = firstObj ? firstObj.name || '' : '';
-				if (firstObj) { env.toolTipSprite.position.copy(firstObj.position); }
+				state.toolTipSprite.text = firstObj ? firstObj.name || '' : '';
+				if (firstObj) { state.toolTipSprite.position.copy(firstObj.position); }
 			}
 
 			// Update controls
-			//env.tbcontrols.update();
-			env.vrcontrols.update();
-			env.fpVrControls.update(timestamp);
-			if (env.vrButton.isPresenting()) {
-				env.touchMoveControls.update(timestamp);
+			//tbcontrols.update();
+			vrcontrols.update();
+			fpVrControls.update(timestamp);
+			if (state.vrButton.isPresenting()) {
+				touchMoveControls.update(timestamp);
 			}
 
 			// Frame cycle
 			// WebGL rendering
-			//env.renderer.render(env.scene, env.camera);
+			//state.renderer.render(state.scene, state.camera);
 			//requestAnimationFrame(animate);
 
 			// WebVR rendering
-			env.vreffect.render(env.scene, env.camera);
-			env.vrDisplay.requestAnimationFrame(animate);
+			state.vreffect.render(state.scene, state.camera);
+			state.vrDisplay.requestAnimationFrame(animate);
 		}
 
 		function initWebVR() {
 			// Apply VR stereo rendering to renderer.
-			env.vreffect = new THREE.VREffect(env.renderer);
+			state.vreffect = new THREE.VREffect(state.renderer);
 
 
 			// Initialize the WebVR UI.
 			const webvruiElem = document.createElement('div');
 			webvruiElem.setAttribute('id', 'ui');
-			env.domNode.appendChild(webvruiElem);
+			domNode.appendChild(webvruiElem);
 
 			const vrButton = document.createElement('div');
 			vrButton.setAttribute('id', 'vr-button');
@@ -185,113 +176,111 @@ export default function() {
 			magicWindow.innerHTML = 'Try it without a headset';
 			webvruiElem.appendChild(magicWindow);
 
-			env.vrButton = new webvrui.EnterVRButton(env.renderer.domElement, {
+			state.vrButton = new webvrui.EnterVRButton(state.renderer.domElement, {
 				color: 'black',
 				background: 'white',
 				corners: 'square'
 			});
 
-			env.vrButton.on('exit', () => {
-				env.camera.quaternion.set(0, 0, 0, 1);
-				//env.camera.position.set(0, env.vrcontrols.userHeight, 0);
-				env.camera.position.set(0, 0, 0);
-				//env.touchMoveControls.moveForward = 0;
+			state.vrButton.on('exit', () => {
+				state.camera.quaternion.set(0, 0, 0, 1);
+				//state.camera.position.set(0, vrcontrols.userHeight, 0);
+				state.camera.position.set(0, 0, 0);
+				//touchMoveControls.moveForward = 0;
 			});
-			env.vrButton.on('enter', () => {
-				env.camera.quaternion.set(0, 0, 0, 1);
-				env.camera.position.set(0, 0, 0);
-				//env.touchMoveControls.moveForward = 0;
+			state.vrButton.on('enter', () => {
+				state.camera.quaternion.set(0, 0, 0, 1);
+				state.camera.position.set(0, 0, 0);
+				//touchMoveControls.moveForward = 0;
 			});
-			env.vrButton.on('hide', () => {
+			state.vrButton.on('hide', () => {
 				document.getElementById('ui').style.display = 'none';
 			});
-			env.vrButton.on('show', () => {
+			state.vrButton.on('show', () => {
 				document.getElementById('ui').style.display = 'inherit';
 			});
 
-			document.getElementById('vr-button').appendChild(env.vrButton.domElement);
+			document.getElementById('vr-button').appendChild(state.vrButton.domElement);
 			document.getElementById('magic-window').addEventListener('click', () => {
-				env.vrButton.requestEnterFullscreen();
+				state.vrButton.requestEnterFullscreen();
 			});
 		}
-	}
+	},
 
-	function digest() {
-		if (!env.initialised) { return }
-
+	update: state => {
 		resizeCanvas();
 
-		env.onFrame = ()=>{}; // Clear previous frame hook
-		env.scene = new THREE.Scene(); // Clear the place
+		state.onFrame = ()=>{}; // Clear previous frame hook
+		state.scene = new THREE.Scene(); // Clear the place
 
 		// Add tooltip sprite
-		env.scene.add(env.toolTipSprite);
+		state.scene.add(state.toolTipSprite);
 
 		// Build graph with data
 		const graph = ngraph.graph();
-		for (let nodeId in env.graphData.nodes) {
-			graph.addNode(nodeId, env.graphData.nodes[nodeId]);
+		for (let nodeId in state.graphData.nodes) {
+			graph.addNode(nodeId, state.graphData.nodes[nodeId]);
 		}
-		for (let link of env.graphData.links) {
+		for (let link of state.graphData.links) {
 			graph.addLink(...link, {});
 		}
 
 		// Add WebGL objects
 		graph.forEachNode(node => {
-			const nodeMaterial = new THREE.MeshBasicMaterial({ color: env.colorAccessor(node.data) || 0xffffaa, transparent: true });
+			const nodeMaterial = new THREE.MeshBasicMaterial({ color: state.colorAccessor(node.data) || 0xffffaa, transparent: true });
 			nodeMaterial.opacity = 0.75;
 
 			const sphere = new THREE.Mesh(
-				new THREE.SphereGeometry(Math.cbrt(env.valAccessor(node.data) || 1) * env.nodeRelSize, 8, 8),
+				new THREE.SphereGeometry(Math.cbrt(state.valAccessor(node.data) || 1) * state.nodeRelSize, 8, 8),
 				nodeMaterial
 			);
-			sphere.name = env.nameAccessor(node.data) || '';
+			sphere.name = state.nameAccessor(node.data) || '';
 
-			env.scene.add(node.data.sphere = sphere)
+			state.scene.add(node.data.sphere = sphere)
 		});
 
 		const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xf0f0f0, transparent: true });
-		lineMaterial.opacity = env.lineOpacity;
+		lineMaterial.opacity = state.lineOpacity;
 		graph.forEachLink(link => {
 			const line = new THREE.Line(new THREE.Geometry(), lineMaterial),
 				fromName = getNodeName(link.fromId),
 				toName = getNodeName(link.toId);
 			if (fromName && toName) { line.name = `${fromName} > ${toName}`; }
 
-			env.scene.add(link.data.line = line);
+			state.scene.add(link.data.line = line);
 
 			function getNodeName(nodeId) {
-				return env.nameAccessor(graph.getNode(nodeId).data);
+				return state.nameAccessor(graph.getNode(nodeId).data);
 			}
 		});
 
-		env.camera.lookAt(env.scene.position);
-		env.camera.position.z = Math.cbrt(Object.keys(env.graphData.nodes).length) * CAMERA_DISTANCE2NODES_FACTOR;
+		state.camera.lookAt(state.scene.position);
+		state.camera.position.z = Math.cbrt(Object.keys(state.graphData.nodes).length) * CAMERA_DISTANCE2NODES_FACTOR;
 
 		// Add force-directed layout
 		const layout = ngraph.forcelayout3d(graph);
 
-		for (let i=0; i<env.warmUpTicks; i++) { layout.step(); } // Initial ticks before starting to render
+		for (let i=0; i<state.warmUpTicks; i++) { layout.step(); } // Initial ticks before starting to render
 
 		let cntTicks = 0;
 		const startTickTime = new Date();
-		env.onFrame = layoutTick;
+		state.onFrame = layoutTick;
 
 		//
 
 		function resizeCanvas() {
-			if (env.width && env.height) {
-				//env.renderer.setSize(env.width, env.height);
-				env.vreffect.setSize(env.width, env.height);
+			if (state.width && state.height) {
+				//state.renderer.setSize(state.width, state.height);
+				state.vreffect.setSize(state.width, state.height);
 
-				env.camera.aspect = env.width/env.height;
-				env.camera.updateProjectionMatrix();
+				state.camera.aspect = state.width/state.height;
+				state.camera.updateProjectionMatrix();
 			}
 		}
 
 		function layoutTick() {
-			if (cntTicks++ > env.coolDownTicks || (new Date()) - startTickTime > env.coolDownTime) {
-				env.onFrame = ()=>{}; // Stop ticking graph
+			if (cntTicks++ > state.coolDownTicks || (new Date()) - startTickTime > state.coolDownTime) {
+				state.onFrame = ()=>{}; // Stop ticking graph
 			}
 
 			layout.step(); // Tick it
@@ -321,50 +310,5 @@ export default function() {
 			});
 		}
 	}
+});
 
-	// Component constructor
-	function chart(nodeElement) {
-		env.domNode = nodeElement;
-
-		initStatic();
-		digest();
-
-		return chart;
-	}
-
-	// Getter/setter methods
-	exposeProps.forEach(prop => {
-		chart[prop.name] = getSetEnv(prop.name, prop.redigest, prop.onChange);
-		env[prop.name] = prop.initVal;
-		prop.onChange(prop.initVal);
-
-		function getSetEnv(prop, redigest = false,  onChange = newVal => {}) {
-			return _ => {
-				if (!arguments.length) { return env[prop] }
-				env[prop] = _;
-				onChange(_);
-				if (redigest) { digest() }
-				return chart;
-			}
-		}
-	});
-
-	// Reset to default state
-	chart.resetState = function() {
-		this.graphData({nodes: [], links: []})
-			.nodeRelSize(4)
-			.lineOpacity(0.2)
-			.valAccessor(node => node.val)
-			.nameAccessor(node => node.name)
-			.colorAccessor(node => node.color)
-			.warmUpTicks(0)
-			.coolDownTicks(Infinity)
-			.coolDownTime(15000); // ms
-
-		return this;
-	};
-
-	chart.resetState(); // Set defaults at instantiation
-
-	return chart;
-};
