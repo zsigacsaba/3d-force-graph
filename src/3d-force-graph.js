@@ -186,12 +186,12 @@ export default SWC.createComponent({
 				state.camera.quaternion.set(0, 0, 0, 1);
 				//state.camera.position.set(0, vrcontrols.userHeight, 0);
 				state.camera.position.set(0, 0, 0);
-				//touchMoveControls.moveForward = 0;
+				touchMoveControls.moveForward = 0;
 			});
 			state.vrButton.on('enter', () => {
 				state.camera.quaternion.set(0, 0, 0, 1);
 				state.camera.position.set(0, 0, 0);
-				//touchMoveControls.moveForward = 0;
+				touchMoveControls.moveForward = 0;
 			});
 			state.vrButton.on('hide', () => {
 				document.getElementById('ui').style.display = 'none';
