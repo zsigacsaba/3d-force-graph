@@ -43,9 +43,6 @@ export default SWC.createComponent({
 	],
 
 	init: (domNode, state) => {
-		// Init state
-		state.onFrame = (() => {});
-
 		// Wipe DOM
 		domNode.innerHTML = '';
 
@@ -125,7 +122,7 @@ export default SWC.createComponent({
 		//
 
 		function animate(timestamp) {
-			state.onFrame();
+			if (state.onFrame) state.onFrame();
 
 			// Update tooltip
 			raycaster.setFromCamera(mousePos, state.camera);
@@ -210,7 +207,7 @@ export default SWC.createComponent({
 	update: state => {
 		resizeCanvas();
 
-		state.onFrame = ()=>{}; // Clear previous frame hook
+		state.onFrame = null; // Clear previous frame hook
 		state.scene = new THREE.Scene(); // Clear the place
 
 		// Add tooltip sprite
@@ -280,7 +277,7 @@ export default SWC.createComponent({
 
 		function layoutTick() {
 			if (cntTicks++ > state.coolDownTicks || (new Date()) - startTickTime > state.coolDownTime) {
-				state.onFrame = ()=>{}; // Stop ticking graph
+				state.onFrame = null; // Stop ticking graph
 			}
 
 			layout.step(); // Tick it
