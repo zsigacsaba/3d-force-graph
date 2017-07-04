@@ -1,5 +1,6 @@
 import commonJs from 'rollup-plugin-commonjs';
 import nodeResolve from 'rollup-plugin-node-resolve';
+import bundleWorker from 'rollup-plugin-bundle-worker';
 import postCss from 'rollup-plugin-postcss';
 import postCssSimpleVars from 'postcss-simple-vars';
 import postCssNested from 'postcss-nested';
@@ -15,6 +16,7 @@ export default {
             jsnext: true,
             main: true
         }),
+        bundleWorker(),
         postCss({
             plugins: [
                 postCssSimpleVars(),

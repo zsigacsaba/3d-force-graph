@@ -11,6 +11,8 @@ const ngraph = { graph, forcelayout, forcelayout3d };
 
 import * as SWC from 'swc';
 
+import SimulationWorker from 'worker!./src/SimulationWorker.js';
+
 //
 
 const CAMERA_DISTANCE2NODES_FACTOR = 150;
@@ -226,12 +228,29 @@ export default SWC.createComponent({
 			layout.graph = graph; // Attach graph reference to layout
 		}
 
-		for (let i=0; i<state.warmupTicks; i++) { layout[isD3Sim?'tick':'step'](); } // Initial ticks before starting to render
+		//for (let i=0; i<state.warmupTicks; i++) { layout[isD3Sim?'tick':'step'](); } // Initial ticks before starting to render
 
-		let cntTicks = 0;
-		const startTickTime = new Date();
-		state.onFrame = layoutTick;
-		state.infoElem.textContent = '';
+		const simWorker = new SimulationWorker();
+		simWorker.postMessage({ order: 'init' });
+
+		simWorker.postMessage({ order: 'tick', cycles: state.warmupTicks });
+
+
+		let cntTicks = 0,
+			startTickTime;
+
+		simWorker.onmessage = function(e) {
+			if (e.data === 'done') {
+				startTickTime = new Date();
+				state.onFrame = layoutTick;
+				state.infoElem.textContent = '';
+			} else if (Number.isInteger(e.data)) {
+				state.infoElem.textContent = `Running force simulation (${e.data}/${state.warmupTicks}})`;
+			}
+		};
+		//const startTickTime = new Date();
+		//state.onFrame = layoutTick;
+		//state.infoElem.textContent = '';
 
 		//
 
